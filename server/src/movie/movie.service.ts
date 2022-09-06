@@ -1,10 +1,12 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { CreateMovieDto } from './dto/create-movie.dto'
 import { Movie } from './entities/movie.entity'
 import { remove } from 'lodash'
 import { HttpService } from '@nestjs/axios/dist'
 import { ConfigService } from '@nestjs/config/dist'
 import { map } from 'rxjs'
+import { DuplicateMovieException } from './errors/DuplicateMovieException'
+import axios from 'axios'
 
 @Injectable()
 export class MovieService {
@@ -23,11 +25,15 @@ export class MovieService {
       return movie
     }
 
-    throw new BadRequestException() // FIXME!
+    throw new DuplicateMovieException()
   }
 
   findAll() {
     return this.movies
+  }
+
+  findOne(imdbID: string) {
+    return this.movies.find(movie => movie.imdbID === imdbID)
   }
 
   remove(imdbID: string, userId: string) {
@@ -71,6 +77,17 @@ export class MovieService {
   }
 
   async search(search: string) {
-    return this.httpService.get(`http://www.omdbapi.com/?apikey=${this.configService.getOrThrow("API_KEY")}&s=${search}`).pipe(map(axiosResponse => axiosResponse.data))
+    const searchData = await axios.get(`http://www.omdbapi.com/?apikey=${this.configService.getOrThrow("API_KEY")}&s=${search}`)
+    const fullDataPromises = searchData.data?.Search?.map(async datum => {
+      const data = await axios.get(`http://www.omdbapi.com/?apikey=${this.configService.getOrThrow("API_KEY")}&i=${datum.imdbID}`)
+      return data
+    })
+
+    if(fullDataPromises) {
+      const fullData = (await Promise.all(fullDataPromises)).map(datum => datum.data)
+      return fullData
+    }
+
+    return []
   }
 }

@@ -12,12 +12,14 @@ import {
     Slideshow,
     Cancel,
     HeartBroken,
+    Logout
 } from "@mui/icons-material"
 import { debounce } from "lodash"
 import MovieOptionCard from "./MovieOptionCard"
 import MovieCard from "./MovieCard"
 import { useConfirm } from "material-ui-confirm"
 import { useSnackbar } from "notistack"
+import MovieDataModal from "./MovieDataModal"
 
 const MovieLoader = ({ socket }) => {
     const confirm = useConfirm()
@@ -25,13 +27,16 @@ const MovieLoader = ({ socket }) => {
     const [movies, setMovies] = useState([])
     const [data, setData] = useState([])
     const isMobile = useMediaQuery("(max-width: 800px)")
-    const { enqueueSnackbar } = useSnackbar();
+    const { enqueueSnackbar } = useSnackbar()
+    const [openModal, setOpenModal] = useState(null)
 
     const handleSearch = (event) => {
         const { value } = event.target
         socket.emit("search", {"search": value }, (data) => {
-            if(data.Response === "True") {
-                setData(data.Search)
+            if(data) {
+                const movieIds = movies.map(movie => movie.imdbID)
+                data = data.filter(datum => !movieIds.includes(datum.imdbID)).filter(datum => datum.Type === "movie")
+                setData(data)
             }
         })
     }
@@ -44,13 +49,19 @@ const MovieLoader = ({ socket }) => {
 
     const handleAdd = (movie) => {
         socket.emit("createMovie", movie, (response) => {
-            console.log(response)
+            setData(prevData => prevData.filter(prevData => prevData.imdbID !== movie.imdbID))
             enqueueSnackbar(response, { variant: "success" })
         })
     }
     
-    const handleLeave = () => {
-        socket.emit("leave")
+    const handleLeave = async () => {
+        try {
+            await confirm({
+                title: <Typography variant="h5" sx={{ display: "flex", gap: theme.spacing(1), alignItems: "center" }}>Leave the room? <Logout sx={{color: theme.palette.warning.main }}/></Typography>,
+                description: "If you leave, all of your selections will be removed."
+            })
+            socket.emit("leave")
+        } catch(error) {}
     }
 
     const handleRemove = async (imdbID) => {
@@ -67,7 +78,7 @@ const MovieLoader = ({ socket }) => {
                 description: "This action is permanent and cannot be undone."
             })
             socket.emit("removeMovie", { "imdbID": imdbID}, (response) => {
-                console.log(response)
+                enqueueSnackbar(response, { variant: "info" })
             })
         } catch(error) {}
     }
@@ -134,7 +145,7 @@ const MovieLoader = ({ socket }) => {
                         </InputAdornment>
                     }
                 />
-                <Button variant="contained" onClick={handleLeave} sx={{ml: theme.spacing(1)}}>Leave</Button>
+                <Button variant="contained" onClick={handleLeave} sx={{ml: theme.spacing(1)}}>Leave<Logout sx={{ml: theme.spacing(1)}} /></Button>
             </div>
             <div style={{ width: "100%", display: "flex", flexDirection: isMobile ? "column" : "row", gap: theme.spacing(1), justifyContent: "center" }}>
                 { data.length ? (
@@ -151,13 +162,20 @@ const MovieLoader = ({ socket }) => {
                                 overflow: "auto",
                             }}>
                                 { 
-                                    data.filter(datum => datum.Type === "movie").map((datum, index) => {
+                                    data.map((datum, index) => {
                                         return (
-                                            <MovieOptionCard
-                                                key={datum.imdbID}
-                                                movie={datum}
-                                                handleAdd={handleAdd}
-                                            />
+                                            <div key={datum.imdbID}>
+                                                <MovieOptionCard
+                                                    movie={datum}
+                                                    handleAdd={handleAdd}
+                                                    openModal={() => setOpenModal(datum.imdbID)}
+                                                />
+                                                <MovieDataModal 
+                                                    movie={datum}
+                                                    open={openModal === datum.imdbID}
+                                                    handleClose={() => setOpenModal(null)}
+                                                />
+                                            </div>
                                         )
                                     })
                                 }
@@ -182,16 +200,26 @@ const MovieLoader = ({ socket }) => {
                             }}>
                                 { 
                                     movies.map((movie, index) => {
-                                        return <MovieCard 
-                                            key={movie.imdbID} 
-                                            movie={movie}
-                                            iLike={movie.likes.includes(socket.userId) }
-                                            likes={movie.likes.length}
-                                            isMine={movie.addedBy === socket.userId}
-                                            position={index + 1}
-                                            handleLike={handleLike}
-                                            handleRemove={handleRemove}
-                                        />
+                                        return (
+                                            <>
+                                                <MovieCard 
+                                                    key={movie.imdbID} 
+                                                    movie={movie}
+                                                    iLike={movie.likes.includes(socket.userId) }
+                                                    likes={movie.likes.length}
+                                                    isMine={movie.addedBy === socket.userId}
+                                                    position={index + 1}
+                                                    handleLike={handleLike}
+                                                    handleRemove={handleRemove}
+                                                    openModal={() => setOpenModal(movie.imdbID)}
+                                                />
+                                                <MovieDataModal 
+                                                    movie={movie}
+                                                    open={openModal === movie.imdbID}
+                                                    handleClose={() => setOpenModal(null)}
+                                                />
+                                            </>
+                                        )
                                     })
                                 }
                             </div>

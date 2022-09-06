@@ -9,6 +9,7 @@ import { randomUUID } from "crypto"
 import { PublicSessionDto } from "../session/dto/public-session.dto"
 import { DuplicateSessionUsernameException } from "../session/errors/DuplicateSessionUsernameException"
 import { UseFilters } from "@nestjs/common"
+import { DuplicateMovieException } from "./errors/DuplicateMovieException"
 
 @WebSocketGateway({
   cors: {
@@ -30,7 +31,11 @@ export class MovieGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.emit('movieUpdate', this.findAll())
       return `${movie.Title} was added to the queue.`
     } catch(error) {
-      throw new WsException(error.message)
+      if(error instanceof DuplicateMovieException) {
+        throw new WsException("That movie is already in the queue.")
+      } else {
+        throw new WsException(error.message)
+      }
     }
   }
 
@@ -47,12 +52,17 @@ export class MovieGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('removeMovie')
   remove(
-        @MessageBody('imdbID') id: string,
+        @MessageBody('imdbID') imdbID: string,
         @ConnectedSocket() client: Socket
     ) {
-        try { 
-        this.movieService.remove(id, client.data.userId)
+        try {
+        const movie = this.movieService.findOne(imdbID)
+        if(!movie) {
+          throw new WsException("A movie with that ID was not found in the queue.")
+        }
+        this.movieService.remove(imdbID, client.data.userId)
         this.server.emit("movieUpdate", this.findAll())
+        return `${movie.Title} was removed from the queue.`
         } catch(error) {
           throw new WsException(error.message)
         }
@@ -77,6 +87,7 @@ export class MovieGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.emit('movieUpdate', this.findAll())
       console.log(`${session.sessionId}: ${session.username} has left the room.`)
       this.sessionService.removeSession(session.sessionId)
+      client.broadcast.emit("userLeft", `${client.data.username} has left the room.`)
       client.emit("leave")
     } catch (error) {
       throw new WsException(error.message)
@@ -134,6 +145,8 @@ export class MovieGateway implements OnGatewayConnection, OnGatewayDisconnect {
       sessionId: client.data.sessionId,
       userId: client.data.userId,
     })
+
+    client.broadcast.emit("userJoined", `${client.data.username} has joined the room.`)
   }
 
   handleDisconnect(client: Socket, ...args: any[]) {
@@ -143,6 +156,7 @@ export class MovieGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.movieService.wipeLikes(session.userId)
       this.server.emit('movieUpdate', this.findAll())
       console.log(`${session.sessionId}: ${session.username} has disconnected`)
+      this.server.emit("userLeft", `${client.data.username} has left the room.`)
     }
     else
     {

@@ -15,7 +15,7 @@ import {
 
 import NoImage from "../assets/no-image.png"
 
-const MovieOptionCard = ({movie, handleAdd}) => {
+const MovieOptionCard = ({movie, handleAdd, openModal}) => {
     return (
         <Card sx={{
             display: "flex", 
@@ -56,6 +56,7 @@ const MovieOptionCard = ({movie, handleAdd}) => {
                 }}>
                     <IconButton 
                         aria-label="more"
+                        onClick={openModal}
                     >
                         <MoreHoriz 
                             sx={{ 

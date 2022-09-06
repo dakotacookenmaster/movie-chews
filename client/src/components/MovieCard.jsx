@@ -21,7 +21,7 @@ import NoImage from "../assets/no-image.png"
 
 import { useTheme } from "@mui/material/styles"
 
-const MovieCard = ({movie, position, likes, iLike, isMine, handleLike, handleRemove}) => {
+const MovieCard = ({movie, position, likes, iLike, isMine, handleLike, handleRemove, openModal}) => {
     const theme = useTheme()
     return (
         <Card elevation={6} sx={{
@@ -91,6 +91,7 @@ const MovieCard = ({movie, position, likes, iLike, isMine, handleLike, handleRem
                     )}
                     <IconButton 
                         aria-label="remove"
+                        onClick={openModal}
                     >
                         <MoreHoriz 
                             sx={{ 

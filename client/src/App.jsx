@@ -58,6 +58,14 @@ const App = () => {
             socket.disconnect()
         })
 
+        socket.on("userJoined", (payload) => {
+            enqueueSnackbar(payload, { variant: "info" })
+        })
+
+        socket.on("userLeft", (payload) => {
+            enqueueSnackbar(payload, { variant: "info" })
+        })
+
         socket.on("disconnect", () => {
             setIsConnected(false)
             setConnectedWithSession(false)
