@@ -19,7 +19,7 @@ const MovieDataModal = ({movie, open, handleClose}) => {
             onClose={handleClose}
             aria-labelledby="modal-modal-title"
             aria-describedby="modal-modal-description"
-            sx={{display: "flex", justifyContent: "center", overflow: "auto", maxHeight: "95vh", padding: isMobile ? "3vh" : "10vh"}}
+            sx={{display: "flex", justifyContent: "center", overflow: "auto", maxHeight: "100vh", padding: isMobile ? "3vh" : "10vh"}}
         >
             <Paper elevation={9} sx={{ maxWidth: "1300px", width: "100%", height: "fit-content", background: "#000000", padding: theme.spacing(3) }}>
                 <div style={{display: "flex", justifyContent: "space-between"}}>

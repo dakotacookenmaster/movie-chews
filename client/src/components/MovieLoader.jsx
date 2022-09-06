@@ -114,8 +114,6 @@ const MovieLoader = ({ socket }) => {
             setMovies(payload)
         })
 
-        // socket
-
     }, [])
 
     return (
@@ -151,7 +149,7 @@ const MovieLoader = ({ socket }) => {
                 { data.length ? (
                     <div style={{width: "100%", display: "flex", justifyContent: isMobile || !movies.length ? "center" : "right"}}>
                         <div style={{width: "100%", maxWidth: "500px"}}>
-                            <Typography variant="h5" sx={{mt: theme.spacing(2)}}>Search Queue</Typography>
+                            <Typography variant="h5" sx={{mt: theme.spacing(2)}}>Search Results</Typography>
                             <div style={{ 
                                 display: "flex", 
                                 width: "100%",

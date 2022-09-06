@@ -126,7 +126,7 @@ export class MovieGateway implements OnGatewayConnection, OnGatewayDisconnect {
         console.log(`${session.sessionId}: ${session.username} has joined`)
       } catch (error) {
         if (error instanceof DuplicateSessionUsernameException) {
-          client.emit("exception", new WsException("duplicate username"))
+          client.emit("exception", new WsException("Please enter a username that's not in use."))
         } else if (error instanceof WsException) {
           client.emit("exception", error)
         } else {
