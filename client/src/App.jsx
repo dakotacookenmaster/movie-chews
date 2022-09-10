@@ -8,9 +8,10 @@ import MovieLoader from './components/MovieLoader'
 import { Box } from '@mui/system'
 import { CircularProgress } from '@mui/material'
 
-const socket = io("http://10.14.2.11:3000", { 
+const socket = io("https://mc.dacoder.io", { 
     autoConnect: false,
-    transports: ['websocket']
+    transports: ['websocket'],
+    path: '/api/socket.io/'
 })
 
 const App = () => {
